@@ -31,3 +31,5 @@ On macOS, successful GUI launches remember arguments under ~/Library/Application
 Reset shuts down emulation, lets upstream save flash, archives that file, then restarts. An archive failure cancels restart. Flash recall requires firmware-owned Save and does not restore unsaved RAM, held notes or play position. Existing legacy sessions are not migrated automatically. No parser, firmware boot or hardware-transfer code is changed.
 
 Branding is a build concern. The full editable icon family and generated platform exports live under assets/icons/. Native resource hooks embed icons; macOS packaging sets bundle metadata before signing. The web wrapper overlays branding on generated output without modifying upstream web sources. Shared runtime sources remain upstream-identical; the plugin build script and Windows resource template/CMake wiring are explicit build-only exceptions in the boundary check.
+
+The experimental SLOOP3 timer branch contains a core timer-clock selection proposal, explicitly authorized by the user. It is outside the canonical upstream-identical runtime boundary and must not be merged as an ordinary standalone customization; see status.md.
