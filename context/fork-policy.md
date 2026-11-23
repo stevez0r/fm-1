@@ -11,6 +11,12 @@ source_refs:
 
 The goal is a useful standalone instrument with a small, inspectable difference from fm1-emu. A fresh branch alone does not lower update costs: every maintained change needs an owner and a reason.
 
+## GitHub destination
+
+All repository work targets `stevez0r/fm-1` only. Never create or modify PRs, issues, comments, reviews, releases, branches, settings or other resources in `joakimeriksson/fm1-emu` or any other repository. Upstream is a read-only reference for inspection and fetching updates; a proposed upstream-compatible fix stays in our fork.
+
+Always pass `--repo stevez0r/fm-1` to repository-scoped `gh` commands, including reads. For `gh api`, use explicit `repos/stevez0r/fm-1/...` paths for writes. Never rely on GitHub CLI's inferred repository or default fork parent. Before any write, verify the destination; after PR creation, verify its URL starts with `https://github.com/stevez0r/fm-1/pull/` and its author is `stevez0r`. Push only to `origin` after verifying it is our fork.
+
 ## Approved product boundary
 
 | Area | Owned changes | Upstream boundary |
@@ -50,7 +56,7 @@ Do not suppress a check, move unrelated code into studio/, rewrite published his
 
 ## Work and review contract
 
-Before edits: inspect current changes, read the applicable context, run the boundary check, and identify which approved area owns the fix. Keep core fixes separate and propose them upstream when appropriate; retire local workarounds when upstream supplies the behavior.
+Before edits: inspect current changes, read the applicable context, run the boundary check, and identify which approved area owns the fix. Keep core fixes separate in our fork; do not submit them upstream. Retire local workarounds when an imported upstream update supplies the behavior.
 
 Before handoff: run the boundary/context checks, relevant regressions and [all required local rebuilds](development.md#rebuild-after-changes), including the standalone Mac app after documentation-only edits. Do not install plugins. Test input selection/routing through the actual host adapter, not only a mapper instantiated directly by a unit test. Record physical MIDI, app, DAW and hardware acceptance separately from builds or replayed messages.
 

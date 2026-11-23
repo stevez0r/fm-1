@@ -7,6 +7,12 @@ Two GitHub accounts are used here and must never be mixed or linked. Before any 
 Run `gh-whoami` in a repo before committing or pushing. If anything says STOP, stop and tell the user.
 <!-- <<< github-two-accounts <<< -->
 
+## GitHub destination
+
+All repository work targets `stevez0r/fm-1` only. Never create or modify PRs, issues, comments, reviews, releases, branches, settings or other resources in `joakimeriksson/fm1-emu` or any other repository. Upstream is a read-only reference for inspection and fetching updates; a proposed upstream-compatible fix stays in our fork.
+
+Always pass `--repo stevez0r/fm-1` to repository-scoped `gh` commands, including reads. For `gh api`, use explicit `repos/stevez0r/fm-1/...` paths for writes. Never rely on GitHub CLI's inferred repository or default fork parent. Before any write, verify the destination; after PR creation, verify its URL starts with `https://github.com/stevez0r/fm-1/pull/` and its author is `stevez0r`. Push only to `origin` after verifying it is our fork.
+
 Read context/overview.md before development.
 
 ## Commands

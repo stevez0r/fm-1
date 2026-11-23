@@ -42,6 +42,15 @@ This upstream baseline accepts update packages (.fwsc), not the previous fork's 
 
 Firmware stays ignored under reference/. Tests with optional upstream fixtures can skip internally when files are missing; report actual firmware smoke runs separately. Default native audio remains upstream's implementation and latency policy. The previous fork's audio refactor is not ported without a separate comparison against this newer engine. This branch makes no new audio-latency guarantee.
 
+## GitHub destination
+
+All PRs and other repository writes belong to `stevez0r/fm-1`. Upstream is read-only. Follow the destination checks in [fork policy](fork-policy.md#github-destination); always specify `--repo stevez0r/fm-1`, including for reads.
+
+```sh
+gh pr create --repo stevez0r/fm-1 --base master --head BRANCH --body-file PR_BODY_FILE
+gh pr view --repo stevez0r/fm-1 BRANCH --json url,author
+```
+
 ## Updating upstream
 
 1. Start with a clean worktree. Follow the account rules and run gh-whoami.
@@ -49,7 +58,7 @@ Firmware stays ignored under reference/. Tests with optional upstream fixtures c
 3. Record the candidate hash, then merge that exact upstream commit. Resolve only the small host adapters and any genuine custom interface changes. Do not replace upstream engine files with old versions.
 4. Update UPSTREAM_REVISION to the merged candidate. Run tools/check_upstream.sh; protected engine, mapping, shared panel, browser and plugin runtime sources must exactly match the candidate.
 5. Run native tests, context checks and app packaging. Smoke-test a real firmware, MIDI mapping, open/cancel, recording, reset backup and Finder recall. Check upstream API changes against custom renderer/overlay geometry.
-6. Commit and push the update branch, then open a PR. Do not rebase or force-push the public product history. No automatic production merges.
+6. Commit and push the update branch, then open a PR in `stevez0r/fm-1` using an explicit `--repo stevez0r/fm-1`. Do not rebase or force-push the public product history. No automatic production merges.
 
 The boundary check also requires the recorded baseline to be an ancestor of HEAD. New upstream changes can still require adapter work; the goal is a small, inspectable difference, not a conflict-free promise.
 
