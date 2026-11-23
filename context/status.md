@@ -84,3 +84,11 @@ Finder session recall and opening another firmware now replace the previous cont
 ## Canonical checkout cutover
 
 The user authorized merging the lean branch and consolidating into the existing fm-1 main checkout. Preserve upstream ancestry with a merge commit. Retain old branch history and local firmware/session files before removing linked worktrees. Rebuild all targets in the canonical checkout; pending physical/audio acceptance remains pending after the cutover.
+
+## SLOOP3 timer investigation
+
+The user authorized a minimal emulator-side compatibility investigation on 2026-11-23. The experimental timer patch selects the 60 MHz peripheral bus for TIMER0..3 source 0 and retains the 24 MHz crystal for source 2. SLOOP3 3.4.1 configures Timer 0 for the bus and calculates time at 60 MHz; the baseline counted it at 24 MHz. Its converted package contains the original application bytes unchanged.
+
+A 16-second fresh-flash Rhodes MIDI run detected 197 starved halves before the patch and 20 afterward at 240 MHz. This is an improvement, not complete audio acceptance. The original JIT and interpreter recordings were byte-identical. The core edit is an upstream proposal outside the protected runtime boundary; keep the pin and boundary check unchanged. Hardware, perceptual audio and DAW acceptance remain unverified.
+
+Validation: 304 native tests passed. The corrected-timer Rhodes run at 400 MHz detected zero starved halves. Standalone packaging and CLAP/AU/VST3 builds passed with installation disabled; Launch Services registration refresh reported -10822.

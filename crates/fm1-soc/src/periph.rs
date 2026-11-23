@@ -500,6 +500,11 @@ impl Periph {
         (self.t5_prd.max(1) as u64 * self.hz / T5_HZ).max(1)
     }
 
+    fn tmr_hz(&self, i: usize) -> u64 {
+        // Source 0 is the 60 MHz peripheral bus; source 2 selects the crystal.
+        if self.tmr[i].con & 0xc == 0 { 60_000_000 } else { T4_HZ }
+    }
+
     fn tmr_div(&self, i: usize) -> u64 {
         TMR_DIV[((self.tmr[i].con >> 4) & 15) as usize]
     }
@@ -508,7 +513,7 @@ impl Periph {
     /// prescaler), rounded up to the cycle the count is reached on. Multiplied out before the one
     /// division, since at most clocks a count is not a whole number of cycles.
     fn tmr_cycles(&self, i: usize, counts: u64) -> u64 {
-        (counts as u128 * self.tmr_div(i) as u128 * self.hz as u128).div_ceil(T4_HZ as u128) as u64
+        (counts as u128 * self.tmr_div(i) as u128 * self.hz as u128).div_ceil(self.tmr_hz(i) as u128) as u64
     }
 
     /// TIMER0..3 `i`'s count now (CNT).
@@ -517,7 +522,7 @@ impl Periph {
         if t.next == u64::MAX {
             return t.cnt0;
         }
-        let counts = (self.cycles - t.start) as u128 * T4_HZ as u128 / (self.tmr_div(i) as u128 * self.hz as u128);
+        let counts = (self.cycles - t.start) as u128 * self.tmr_hz(i) as u128 / (self.tmr_div(i) as u128 * self.hz as u128);
         t.cnt0.wrapping_add((counts as u64 - t.done) as u32)
     }
 
@@ -1682,6 +1687,17 @@ mod tests {
     }
 
     #[test]
+    fn timer_zero_selects_bus_or_crystal_clock() {
+        for (source, rate) in [(1, 60_000_000), (9, 24_000_000)] {
+            let mut p = Periph::default();
+            p.write(0x10408, u32::MAX);
+            p.write(0x10400, source);
+            p.advance(CPU_HZ / 1000);
+            assert_eq!(p.read(0x10404), Some(rate / 1000));
+        }
+    }
+
+    #[test]
     fn a_timer_keeps_the_crystals_time_at_any_cpu_clock() {
         // TIMER1 from the 24 MHz crystal, PRD 48000: the stock firmware's 2 ms engine tick
         for hz in [60_000_000, 80_000_000, 100_000_000, 120_000_000, 160_000_000, 200_000_000, 240_000_000] {
@@ -1689,7 +1705,7 @@ mod tests {
                 let div = TMR_DIV[prescaler as usize] as u32;
                 let mut p = Periph { hz, ..Periph::default() };
                 p.write(0x10508, 48_000 / div);
-                p.write(0x10500, prescaler << 4 | 1);
+                p.write(0x10500, prescaler << 4 | 9);
                 let period = 2 * hz / 1000;
                 p.advance(period / 2);
                 assert_eq!(p.read(0x10504), Some(24_000 / div), "{hz} Hz / {div}: the count half way");
@@ -1712,7 +1728,7 @@ mod tests {
         let hz = 100_000_000u64;
         let mut p = Periph { hz, ..Periph::default() };
         p.write(0x10508, 544);
-        p.write(0x10500, 1);
+        p.write(0x10500, 9);
         let con = p.read(0x10500).unwrap();
         for n in 1..=10_000u64 {
             let want = ((n * 544) as u128 * hz as u128).div_ceil(T4_HZ as u128) as u64;
@@ -1731,10 +1747,10 @@ mod tests {
     fn a_timer_counts_on_through_a_new_prescaler_or_period() {
         let mut p = Periph { hz: 240_000_000, ..Periph::default() };
         p.write(0x10508, 48_000);
-        p.write(0x10500, 1);
+        p.write(0x10500, 9);
         p.advance(240_000); // 1 ms: 24000 counts
         assert_eq!(p.read(0x10504), Some(24_000));
-        p.write(0x10500, 4 << 4 | 1); // the prescaler /2: on from 24000, at half the rate
+        p.write(0x10500, 4 << 4 | 9); // the prescaler /2: on from 24000, at half the rate
         p.advance(240_000);
         assert_eq!(p.read(0x10504), Some(36_000));
         p.write(0x10508, 40_000); // a shorter period: 4000 counts from here (8000 crystal ticks)
