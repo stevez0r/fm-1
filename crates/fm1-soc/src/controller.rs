@@ -8,8 +8,8 @@ pub fn is_minilab3(name: &str) -> bool {
 
 /// Factory Arturia/User CC layout, absolute encoders. First value establishes a baseline:
 /// connecting or touching a control never jumps an unknown firmware parameter.
-pub struct MiniLab3 { previous: [Option<u8>; 128], dedicated: bool, held: [bool; 17] }
-impl Default for MiniLab3 { fn default() -> Self { Self { previous: [None; 128], dedicated: false, held: [false; 17] } } }
+pub struct MiniLab3 { previous: [Option<u8>; 128], dedicated: bool, held: [bool; 18] }
+impl Default for MiniLab3 { fn default() -> Self { Self { previous: [None; 128], dedicated: false, held: [false; 18] } } }
 impl MiniLab3 {
     pub fn fm1() -> Self { Self { dedicated: true, ..Self::default() } }
 
@@ -21,7 +21,7 @@ impl MiniLab3 {
         self.held.fill(false);
     }
     fn button(source: usize) -> u8 {
-        [8,2,6,11,3,12,13,7, 4,5,10,9,0,1,8,3, 8][source]
+        [8,2,6,11,3,12,13,7, 4,5,10,9,0,1,8,3, 8,3][source]
     }
     fn key(&mut self, source: usize, down: bool, mut emit: impl FnMut(Action)) {
         let id = Self::button(source);
@@ -32,7 +32,13 @@ impl MiniLab3 {
     }
     /// True means consumed: forwarding this CC as well would change two parameters.
     pub fn route(&mut self, msg: &[u8], mut emit: impl FnMut(Action)) -> bool {
-        if msg.len() != 3 || msg[0] & 0xf0 != 0xb0 || msg[1] > 127 || msg[2] > 127 { return false; }
+        if msg.len() != 3 || msg[1] > 127 || msg[2] > 127 { return false; }
+        // Factory Bank A sends channel-10 notes, including the printed transport pads.
+        if !self.dedicated && [0x99, 0x89].contains(&msg[0]) && (36..44).contains(&msg[1]) {
+            self.key((msg[1] - 36) as usize, msg[0] == 0x99 && msg[2] != 0, emit);
+            return true;
+        }
+        if msg[0] & 0xf0 != 0xb0 { return false; }
         let (cc, value) = (msg[1], msg[2]);
         if self.dedicated {
             // Dedicated User program: CC74 absolute; seven Relative 1 encoders (64 +/- delta).
@@ -73,7 +79,8 @@ impl MiniLab3 {
         // One dedicated master fader; other faders remain firmware MIDI controls.
         if cc == 16 || cc == 17 { emit(Action::Adc { ch: 4, value: ((value as u32 * 1023 + 63) / 127) as u16 }); return true; }
         // Main encoder click = HOME. Shift-click deliberately not SAVE (no surprise writes).
-        if cc == 115 || cc == 9 { emit(Action::Key { id: if cc == 9 { 3 } else { 8 }, down: value >= 64 }); return true; }
+        if cc == 115 || cc == 9 { self.key(if cc == 9 { 17 } else { 16 }, value >= 64, emit); return true; }
+        if [120,123].contains(&cc) { self.release(emit); }
         false
     }
 }
@@ -153,5 +160,35 @@ mod dedicated_tests {
         for (v,expected) in [(0,0),(127,1023)] {
             p.route(&[0xb0,74,v], |a| assert!(matches!(a,Action::Adc{ch:4,value} if value==expected)));
         }
+    }
+}
+
+#[cfg(test)]
+mod factory_pad_tests {
+    use super::*;
+    #[test]
+    fn factory_pads_consume_notes_and_handle_both_release_formats() {
+        let mut p = MiniLab3::default();
+        for (note, id) in (36..44).zip([8,2,6,11,3,12,13,7]) {
+            let mut out = vec![];
+            assert!(p.route(&[0x99,note,6], |a|out.push(a)));
+            assert!(p.route(&[0x99,note,100], |_|panic!("repeat press")));
+            assert!(p.route(&[0x89,note,0], |a|out.push(a)));
+            assert!(matches!(out.as_slice(),[Action::Key{id:i,down:true},Action::Key{id:j,down:false}] if *i==id && *j==id));
+            p.route(&[0x99,note,127], |_|{});
+            assert!(p.route(&[0x99,note,0], |a|assert!(matches!(a,Action::Key{down:false,..}))));
+        }
+        for msg in [[0x90,41,100],[0x80,41,0],[0x99,44,100]] {
+            assert!(!p.route(&msg, |_|panic!("performance note consumed")));
+        }
+    }
+    #[test]
+    fn factory_duplicate_holds_and_panic_do_not_stick() {
+        let mut p = MiniLab3::default(); let mut out=vec![];
+        for msg in [[0x99,36,100],[0xb0,115,127],[0x89,36,0]] {p.route(&msg, |a|out.push(a));}
+        assert!(matches!(out.as_slice(),[Action::Key{id:8,down:true}]));
+        assert!(!p.route(&[0xb0,123,0], |a|out.push(a)));
+        assert!(matches!(out.last(),Some(Action::Key{id:8,down:false})));
+        p.route(&[0xb0,115,0], |_|panic!("already released"));
     }
 }

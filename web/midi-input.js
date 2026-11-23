@@ -19,16 +19,19 @@ export function isMiniLab3(name = '') {
 // Keep both profiles in step with fm1-soc/controller.rs; factory absolute controls anchor first.
 export class MiniLab3 {
   previous = new Map();
-  held = Array(17).fill(false);
+  held = Array(18).fill(false);
   constructor(mode = 'factory') { this.dedicated = mode === 'fm1'; }
   key(source, down) {
-    const ids=[8,2,6,11,3,12,13,7,4,5,10,9,0,1,8,3,8], id=ids[source];
+    const ids=[8,2,6,11,3,12,13,7,4,5,10,9,0,1,8,3,8,3], id=ids[source];
     const active=()=>this.held.some((held,i)=>held && ids[i]===id);
     const before=active(); this.held[source]=down;
     return before===active() ? [] : [{type:'key',id,down:active()}];
   }
   route(bytes) {
-    if(bytes.length!==3 || (bytes[0]&0xf0)!==0xb0 || bytes[1]>127 || bytes[2]>127) return null;
+    if(bytes.length!==3 || bytes[1]>127 || bytes[2]>127) return null;
+    if(!this.dedicated && [0x99,0x89].includes(bytes[0]) && bytes[1]>=36 && bytes[1]<44)
+      return this.key(bytes[1]-36,bytes[0]===0x99 && bytes[2]!==0);
+    if((bytes[0]&0xf0)!==0xb0) return null;
     const [,cc,value]=bytes;
     if(this.dedicated) {
       if(cc===74) return [{type:'pot',value:Math.round(value*1023/127)}];
@@ -50,7 +53,9 @@ export class MiniLab3 {
     }
     if(cc===114 || cc===112) return value===64 ? [] : [{type:'enc',enc:cc===112?6:0,clicks:value-64}];
     if(cc===16 || cc===17) return [{type:'pot',value:Math.round(value*1023/127)}];
-    if(cc===115 || cc===9) return [{type:'key',id:cc===9?3:8,down:value>=64}];
+    if(cc===115 || cc===9) return this.key(cc===9?17:16,value>=64);
+    if(cc===120 || cc===123)
+      return this.held.flatMap((_,i)=>this.key(i,false)).concat([{type:'midi',bytes}]);
     return null;
   }
 }

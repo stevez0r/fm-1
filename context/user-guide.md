@@ -336,7 +336,7 @@ This changes the piece, not the emulator’s sound engine. A render check of the
 
 For the dedicated FM-1 program with MASTER/SELECT/PRESETS/ALGORITHM on knobs 1–4, K1–K4 on knobs 5–8, and direct command pads, follow [MiniLab setup](minilab.md). It works in standalone, browser and plugins after configuring a User memory in Arturia MIDI Control Center. The following table describes the older factory program only.
 
-### Original factory mapping
+### Factory mapping
 
 Restart the rebuilt native app. In the browser, reopen the updated page, choose **Minilab3 MIDI** under MIDI in and leave **Controller → Factory · MiniLab 3** selected. Use the factory **Arturia** mode (Shift + Pad 3), not DAW mode. No controller settings are written by the app.
 
@@ -351,11 +351,12 @@ Restart the rebuilt native app. In the browser, reopen the updated page, choose 
 | Large encoder click | HOME |
 | Shift button | Hold SCL (called SEL in HYP1); release to let go |
 | Keyboard, pitch/mod strips, Hold/sustain | Normal firmware MIDI input |
-| Pads and faders 1–3 | Normal firmware MIDI input; their effect depends on the firmware |
+| Bank A pads 1–8 | HOME, FX, EDIT, SEQ, SCL/SEL, PLAY/STOP, REC, GLO |
+| Bank B pads and faders 1–3 | Normal firmware MIDI input; their effect depends on the firmware |
 
-The first message from each parameter/navigation knob anchors its position; subsequent movement turns the emulated encoder. This avoids jumping a parameter whose value the firmware has not exposed. MASTER is an absolute volume control. Factory parameter/navigation CC values stop at 0/127: turn back when an endpoint is reached. Customized CC assignments and relative modes on the eight small knobs are not auto-detected. The large encoder uses its factory relative format. The profile consumes mapped CCs so they cannot simultaneously change a second firmware MIDI parameter.
+The first message from each parameter/navigation knob anchors its position; subsequent movement turns the emulated encoder. This avoids jumping a parameter whose value the firmware has not exposed. MASTER is an absolute volume control. Factory parameter/navigation CC values stop at 0/127: turn back when an endpoint is reached. Customized CC assignments and relative modes on the eight small knobs are not auto-detected. The large encoder uses its factory relative format. The profile consumes mapped CCs and Bank A pad notes so they cannot also change a firmware MIDI parameter or play a note.
 
-Pads remain musical notes rather than hidden Save/Record commands. Faders 1–3 retain firmware assignments; a configurable mapping/learn editor remains later work. Plugins support the dedicated User program through an explicit Controller choice, but do not apply this factory profile. **Raw MIDI** in the browser, or native `--controller-raw`, bypasses panel mapping. Auto/all-input routing excludes MiniLab MCU/HUI, ALV and DIN Thru ports; explicitly selecting one still permits it.
+Factory Bank A uses channel-10 notes 36–43 as held panel buttons; Play (pad 6, note 41) controls PLAY/STOP. Both note-off and zero-velocity note-on release a pad. REC invokes the firmware button, not the WAV recorder; holding it can clear patterns in some firmware. Bank B remains musical notes. Faders 1–3 retain firmware assignments; a configurable mapping/learn editor remains later work. Plugins support the dedicated User program through an explicit Controller choice, but do not apply this factory profile. **Raw MIDI** in the browser, or native `--controller-raw`, bypasses panel mapping. Auto/all-input routing excludes MiniLab MCU/HUI, ALV and DIN Thru ports; explicitly selecting one still permits it.
 
 Reference: [Arturia’s MIDI implementation chart](https://support.arturia.com/hc/en-us/articles/6189475866396-MiniLab-3-General-Questions). Factory knob/fader traffic was captured from the attached controller; physical testing of every mapped gesture after rebuilding remains separate.
 

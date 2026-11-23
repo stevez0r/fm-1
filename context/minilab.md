@@ -14,7 +14,7 @@ source_refs:
 ---
 # MiniLab 3 FM-1 User program
 
-The dedicated program maps physical FM-1 controls, so each firmware keeps its own page meanings and button combinations. It requires a MiniLab User program and explicit selection in the emulator. The factory profile remains available with its previous assignments; do not select FM-1 User while sending factory absolute knob values.
+The dedicated program maps physical FM-1 controls, so each firmware keeps its own page meanings and button combinations. It requires a MiniLab User program and explicit selection in the emulator. The factory profile maps Bank A channel-10 notes 36–43 to HOME, FX, EDIT, SEQ, SCL/SEL, PLAY/STOP, REC and GLO without controller reprogramming. Its knobs retain their absolute assignments. Do not select FM-1 User while sending factory absolute knob values.
 
 ## Configure the controller
 
@@ -64,7 +64,7 @@ Plugins default to Raw MIDI, including older projects. The selected profile and 
 
 The controller MASTER position takes over volume until host Master automation changes or the on-screen Master is adjusted. This is saved controller state, not a recorded host automation gesture. Switching the plugin to Raw clears the controller volume override and releases held profile buttons. Browser route/profile/channel changes and standalone disconnection release mapped buttons; received CC120/123 also releases dedicated profile holds. Rebooting clears the controller's transient held state.
 
-For the old mapping, use the factory Arturia program with browser **Factory · MiniLab 3** or omit `--controller-fm1` in standalone. **Raw MIDI** / `--controller-raw` bypasses mapping. The dedicated program applies only to FM-1, not SMK-37.
+For the factory mapping, use the factory Arturia program with browser **Factory · MiniLab 3** or omit `--controller-fm1` in standalone. **Raw MIDI** / `--controller-raw` bypasses mapping. The dedicated program applies only to FM-1, not SMK-37.
 
 ## Octave and transpose
 

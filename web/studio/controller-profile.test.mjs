@@ -10,7 +10,7 @@ test('factory MiniLab knobs drive all four panel controls without forwarding',()
  }
  assert.deepEqual(p.route([0xb0,114,65]),[{type:'enc',enc:0,clicks:1}]);
  assert.deepEqual(p.route([0xb0,16,127]),[{type:'pot',value:1023}]);
- for(const message of [[0x90,60,100],[0x80,60,0],[0xb0,64,127],[0x99,36,100],[0xe0,0,64]]) assert.equal(p.route(message),null);
+ for(const message of [[0x90,60,100],[0x80,60,0],[0xb0,64,127],[0x99,44,100],[0xe0,0,64]]) assert.equal(p.route(message),null);
  assert.ok(isMiniLab3('Minilab3 MIDI'));assert.ok(!isMiniLab3('Minilab3 MCU/HUI'));
 });
 
@@ -42,4 +42,21 @@ test('dedicated profile preserves musical notes, faders and pitch; Shift stays l
  const p=new MiniLab3('fm1');
  for(const msg of [[0x90,60,100],[0x80,60,0],[0x99,36,100],[0xb0,20,127],[0xb0,17,127],[0xb0,82,127],[0xb0,83,127],[0xb0,85,127],[0xb0,64,127],[0xe0,0,64],[0xb0,1,127]]) assert.equal(p.route(msg),null);
  for(const cc of [9,113]) assert.deepEqual(p.route([0xb0,cc,127]),[]);
+});
+
+test('factory Bank A pads control panel buttons without leaking musical notes',()=>{
+ const p=new MiniLab3();
+ for(const [i,id] of [8,2,6,11,3,12,13,7].entries()) {
+  assert.deepEqual(p.route([0x99,36+i,6]),[{type:'key',id,down:true}]);
+  assert.deepEqual(p.route([0x99,36+i,100]),[]);
+  assert.deepEqual(p.route([0x89,36+i,0]),[{type:'key',id,down:false}]);
+  p.route([0x99,36+i,100]);
+  assert.deepEqual(p.route([0x99,36+i,0]),[{type:'key',id,down:false}]);
+ }
+ assert.equal(p.route([0x90,41,100]),null);
+ assert.equal(p.route([0x99,44,100]),null);
+ p.route([0x99,36,100]);p.route([0xb0,115,127]);
+ assert.deepEqual(p.route([0x89,36,0]),[]);
+ assert.deepEqual(p.route([0xb0,123,0]),[{type:'key',id:8,down:false},{type:'midi',bytes:[0xb0,123,0]}]);
+ assert.deepEqual(p.route([0xb0,115,0]),[]);
 });
